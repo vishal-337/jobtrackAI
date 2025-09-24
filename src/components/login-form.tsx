@@ -33,7 +33,7 @@ export function LoginForm({ className, onLogin, error, ...props }: Props) {
     <div className={className} {...props}>
       <div className="min-h-screen flex items-center justify-center">
         <div className="max-w-xs w-full flex flex-col items-center">
-          <Logo className="h-9 w-9" />
+          <Logo className="h-20 w-17" />
           <p className="mt-4 text-xl font-semibold tracking-tight">Log in to Shadcn UI Blocks</p>
           <Button className="mt-8 w-full gap-3">
             <GoogleLogo />
