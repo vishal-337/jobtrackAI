@@ -10,23 +10,24 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 
 type Props = React.ComponentProps<"div"> & {
-  onLogin?: (email: string, password: string) => void
+  onSignUp?: (email: string, password: string, name: string) => void
   error?: string
 }
 
 const formSchema = z.object({
+  name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(8, "Password must be at least 8 characters long"),
 })
 
-export function LoginForm({ className, onLogin, error, ...props }: Props) {
+export function SignUpForm({ className, onSignUp, error, ...props }: Props) {
   const form = useForm<z.infer<typeof formSchema>>({
-    defaultValues: { email: "", password: "" },
+    defaultValues: { name: "", email: "", password: "" },
     resolver: zodResolver(formSchema),
   })
 
   function onSubmit(data: z.infer<typeof formSchema>) {
-    onLogin?.(data.email, data.password)
+    onSignUp?.(data.email, data.password, data.name)
   }
 
   return (
@@ -34,7 +35,7 @@ export function LoginForm({ className, onLogin, error, ...props }: Props) {
       <div className="min-h-screen flex items-center justify-center">
         <div className="max-w-xs w-full flex flex-col items-center">
           <Logo className="h-9 w-9" />
-          <p className="mt-4 text-xl font-semibold tracking-tight">Log in to Shadcn UI Blocks</p>
+          <p className="mt-4 text-xl font-semibold tracking-tight">Create your account</p>
           <Button className="mt-8 w-full gap-3">
             <GoogleLogo />
             Continue with Google
@@ -46,6 +47,19 @@ export function LoginForm({ className, onLogin, error, ...props }: Props) {
           </div>
           <Form {...form}>
             <form className="w-full space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input type="text" placeholder="Name" className="w-full" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="email"
@@ -72,15 +86,12 @@ export function LoginForm({ className, onLogin, error, ...props }: Props) {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="mt-4 w-full">Continue with Email</Button>
-              {error ? <div className="text-sm text-center text-red-600">{error}</div> : null}
+              <Button type="submit" className="mt-4 w-full">Create account</Button>
+              {error ? <div className="text-sm text-red-600">{error}</div> : null}
             </form>
           </Form>
           <div className="mt-5 space-y-5">
-            <a href="/forgot-password" className="text-sm block underline text-muted-foreground text-center">Forgot your password?</a>
-            <p className="text-sm text-center">Don&apos;t have an account?
-              <a href="/signup" className="ml-1 underline text-muted-foreground">Create account</a>
-            </p>
+            <a href="/login" className="text-sm block underline text-muted-foreground text-center">Already have an account?</a>
           </div>
         </div>
       </div>
@@ -113,3 +124,5 @@ function GoogleLogo() {
     </svg>
   )
 }
+
+

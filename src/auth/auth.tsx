@@ -1,36 +1,66 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react"
+import { supabase } from "@/supabaseClient"
+
+type AuthResult = { ok: true } | { ok: false; error: string }
 
 type AuthContextValue = {
   isAuthenticated: boolean
-  login: (email: string) => void
-  logout: () => void
+  isReady: boolean
+  login: (email: string, password: string) => Promise<AuthResult>
+  signUp: (email: string, password: string, name?: string) => Promise<AuthResult>
+  logout: () => Promise<void>
+  resetPassword: (email: string, redirectTo?: string) => Promise<AuthResult>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
-    const v = localStorage.getItem("auth:isAuthenticated")
-    setIsAuthenticated(v === "true")
+    supabase.auth.getSession().then(({ data }) => {
+      setIsAuthenticated(!!data.session)
+      setIsReady(true)
+    })
+    const { data } = supabase.auth.onAuthStateChange((_, session) => {
+      setIsAuthenticated(!!session)
+      setIsReady(true)
+    })
+    return () => {
+      data.subscription.unsubscribe()
+    }
   }, [])
 
-  const login = useCallback((email: string) => {
-    localStorage.setItem("auth:isAuthenticated", "true")
-    localStorage.setItem("auth:email", email)
-    setIsAuthenticated(true)
+  const login = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) return { ok: false, error: error.message } as const
+    return { ok: true } as const
   }, [])
 
-  const logout = useCallback(() => {
-    localStorage.removeItem("auth:isAuthenticated")
-    localStorage.removeItem("auth:email")
-    setIsAuthenticated(false)
+  const signUp = useCallback(async (email: string, password: string, name?: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: name ? { name } : undefined },
+    })
+    if (error) return { ok: false, error: error.message } as const
+    return { ok: true } as const
+  }, [])
+
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut()
+  }, [])
+
+  const resetPassword = useCallback(async (email: string, redirectTo?: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: redirectTo || window.location.origin })
+    if (error) return { ok: false, error: error.message } as const
+    return { ok: true } as const
   }, [])
 
   const value = useMemo(
-    () => ({ isAuthenticated, login, logout }),
-    [isAuthenticated, login, logout]
+    () => ({ isAuthenticated, isReady, login, signUp, logout, resetPassword }),
+    [isAuthenticated, isReady, login, signUp, logout, resetPassword]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
